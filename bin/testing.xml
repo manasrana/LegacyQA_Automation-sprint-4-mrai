@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<suite name="Consensus Suite" thread-count="5" verbose="1" allow-return-values="false" parallel="false" data-provider-thread-count="10" junit="false" configfailurepolicy="skip" skipfailedinvocationcounts="false">
+ 
+  <listeners>
+      <listener class-name="org.uncommons.reportng.HTMLReporter"/>
+      <listener class-name="org.uncommons.reportng.JUnitXMLReporter"/>
+  </listeners>
+  </suite> <!-- Consensus -->

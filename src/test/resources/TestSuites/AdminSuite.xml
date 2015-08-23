@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<suite name="Admin" verbose="1" >
+    <listeners>
+        <listener class-name="org.uncommons.reportng.HTMLReporter"/>
+        <listener class-name="org.uncommons.reportng.JUnitXMLReporter"/>
+    </listeners>
+    <test name="Admin related test" >
+        <classes>
+            <class name="tests.MiscellaneousTests" />
+            <methods>
+                <include name="QA136_InvalidUserCheck"/>
+                <include name="QA144_AccountLookUpSprint"/>
+                <include name="QA143_AccountLookUpVerizon"/>
+                <include name="QA142_AccountLookUpATT"/>
+                <include name="QA146_BrowsePhoneAndPhoneDetailPage"/>
+                <include name="QA_4651_MiscContentVerification"/>
+                <include name="QA_135_ValidUserAuthentication"/>
+                <include name="QA5047_NewActivationDeviceFinancingForTablet"/>
+                <include name="QA_2028_ShipadminDefaultBrand"/>
+                <include name="QA_5257_VerifyShipadminOrderSearch"/>
+                <include name="QA_5256_VerifyEventTrackerPages"/>
+                <include name="QA137_VerifyVirginMobilePage"/>
+                <include name="QA_52_VerizonNonEdgeAddMultipleLinesToExistingAccount"/>
+            </methods>
+        </classes>
+    </test>
+</suite>

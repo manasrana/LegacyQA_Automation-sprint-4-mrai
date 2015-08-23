@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<suite name="main-suite" parallel="false">
+    <suite-files>
+        <suite-file path="TestSuites/AdminSuite.xml"/>
+        <suite-file path="TestSuites/VerizonSuite.xml"/>
+        <suite-file path="TestSuites/SprintSuite.xml"/>
+    </suite-files>
+</suite>

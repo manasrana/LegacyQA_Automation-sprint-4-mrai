@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<suite name="Verizon" verbose="1" parallel="classes" thread-count="3">
+    <listeners>
+        <listener class-name="org.uncommons.reportng.HTMLReporter"/>
+        <listener class-name="org.uncommons.reportng.JUnitXMLReporter"/>
+    </listeners>
+    <test name="Add New Line flow">
+        <parameter name="test-type" value="internal"/>
+        <classes>
+            <class name="verizon.tests.AddNewLineTests">
+                <methods>
+                    <include name="QA_71_VerizonEdgeTryToSwitchIndividualToFamilyAndAAL"/>
+                    <include name="QA_5437_VerizonNonEdgeAAL"/>
+                    <include name="QA_55_VerizonNonEdgeWithOutDeposit2LineActivationWithEsecuretel"/>
+                    <include name="QA_2639_VZWEdgeParkingFailDuringWCAGeneration"/>
+                    <include name="QA50_VerizonNonEdgeWithNumberPortCCInCA"/>
+                    <include name="QA_69_VerizonAddLineToFamilyPlan"/>
+                    <include name="QA_5252_VZWSwitchFromIndividualToFamilyAccountError"/>
+                    <include name="QA_1734_CancelOrderOnWCAPage"/>
+                </methods>
+            </class>
+        </classes>
+    </test>
+    <test name="Upgrade flow">
+        <parameter name="test-type" value="internal"/>
+        <classes>
+            <class name="verizon.tests.UpgradeTests">
+                <methods>
+                    <include name="QA62_VerizonNonEdgeUpgradeKeepExistingPlan"/>
+                    <include name="QA60_VerizonNonEdgeUpgradeNewPlan"/>
+                    <!--<include name="QA5572_VerizonNonEdgeUpgradeWithTwoSmartPhones"/>-->
+                    <include name="QA64_VerizonNonEdgeOneBuddyUpgrade"/>
+                    <include name="QA5356_VerizonEdgeTwoYearContractUpgradePaymentNotRequired"/>
+                    <include name="QA74_VerizonEdgeOneBuddyUpgrade"/>
+                    <include name="QA_76_VerizonEdgeUpgradeAddNewPlan"/>
+                </methods>
+            </class>
+        </classes>
+    </test>
+    <test name="Return Flow">
+        <parameter name="test-type" value="internal"/>
+        <classes>
+            <class name="verizon.tests.ReturnTests">
+                <methods>
+                    <include name="QA_53_VerizonNonEdgeReturn"/>
+                </methods>
+            </class>
+        </classes>
+    </test>
+</suite>

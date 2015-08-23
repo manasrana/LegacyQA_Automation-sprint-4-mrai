@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<suite name="ATT" verbose="1" >
+<listeners>
+      <listener class-name="org.uncommons.reportng.HTMLReporter"/>
+      <listener class-name="org.uncommons.reportng.JUnitXMLReporter"/>
+  </listeners>
+  <test name="Add New Line flow" >
+  <parameter name="test-type" value="internal" />
+    <classes>
+       <class name="att.tests.AddNewLineTests" />
+    </classes>
+  </test>
+  <test name="Exchange flow">
+   <parameter name="test-type" value="internal" />
+    <classes>
+      <class name="att.tests.ExchangeTests" />
+    </classes>
+  </test>
+  <test name="Upgrade flow">
+    <parameter name="test-type" value="internal" />
+    <classes>
+      <class name="att.tests.UpgradeTests" />
+    </classes>
+  </test>
+</suite>
