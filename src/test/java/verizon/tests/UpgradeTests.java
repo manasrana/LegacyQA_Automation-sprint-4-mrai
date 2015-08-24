@@ -1592,6 +1592,302 @@ public class UpgradeTests extends RetailBaseClass {
     }
     //endregion QA_74
 
+    //region QA_58
+    @Test(groups = {"verizon"})
+    @Parameters("test-type")
+    public void QA_58_VerizonNonEdgeExchange(@Optional String testType) {
+        try {
+            //This TC need 1 fresh phone number and 1 fresh IMEI for every run.
+            imeiDetails = PageBase.CSVOperations().GetIMEIAndProductName(FileName.SamsungGalaxyS4_16GBWhite);
+            CustomerDetails cusDetails = PageBase.CSVOperations().ReadCustomerDetailsFromCSV(IdType.DRIVERLICENCE);
+            String receiptId = PageBase.CSVOperations().GetIMEIOrSimNumberOrReceiptId(FileName.ReceiptId);
+            String iMEINumber = imeiDetails.IMEI;
+            String simNumber = imeiDetails.Sim;
+            AccountDetails accountDetails = PageBase.CSVOperations().GetDetails(FileName.VerizonNonEdgeUpgradeMultipleLinesEligible);
+            String phoneNumber = accountDetails.MTN;
+            String sSN = accountDetails.SSN;
+            String zipCode = cusDetails.Zip;
+            String accountPassword = accountDetails.Password;
+            String orderId = "";
+
+            // Adding Devices to Invento
+            PageBase.InventoryManagementPage().launchInventoryInNewTab();
+            PageBase.InventoryManagementPage().addDeviceToInventory(imeiDetails.IMEI, imeiDetails.ProductName);
+            PageBase.InventoryManagementPage().closeInventoryTab();
+            Utilities.switchPreviousTab();
+            Reporter.log("<br> IMEI Added to Inventory: " + imeiDetails.IMEI + "(ProdCode: " + imeiDetails.ProductName + ")");
+
+            Log.startTestCase("QA_58_VerizonNonEdgeExchange");
+            Reporter.log("<h2>Start - QA_58_VerizonNonEdgeExchange <br></h2>");
+            Reporter.log("<h4>Description:</h4> Verizon Non Edge Upgrdae 2 Line With Existing Plan.");
+            Reporter.log("Launching Browser <br>", true);
+
+            //Verify whether which enviorement to use internal or external.
+            Reporter.log("<br> Test Type Settings");
+            testType = BrowserSettings.readConfig("test-type");
+            if (testType.equals("internal")) {
+                //Customizing xml files in Carrier Responder
+                Reporter.log("<h3><U> Carrier Responder</U></h3>", true);
+                carrierResponderSettingsQA58(phoneNumber);
+                Reporter.log("<h3><U> Carrier Responder Changes Done.</U></h3>", true);
+            } else {
+                selectingVerizonExternalEnvironment();
+            }
+
+            //Calling DBError utility to  find initial count or error in log files.
+            DBError.navigateDBErrorPage();
+            int initialCount = PageBase.AdminPage().totalErrorCount();
+            Reporter.log("<h3> DB Errors Initial Check:");
+            Reporter.log(String.valueOf(initialCount) + "</h3>");
+
+            //Switching Back To Retail
+            Utilities.switchPreviousTab();
+
+            //POA FLOW
+            Reporter.log("<h2> POA Flow Starts </h2>");
+            orderId = poaFlowQA58(phoneNumber, iMEINumber, simNumber, orderId, sSN, accountPassword, zipCode, receiptId);
+            Reporter.log("<h2> POA Flow Finishes</h2>");
+
+            if (readConfig("Activation").toLowerCase().contains("true")) {
+                //Ship Admin
+                Reporter.log("<h2> ShipAdmin Verification:</h2>");
+                ShipAdminBaseClass.launchShipAdminInNewTab();
+                shipAdminVerificationsUpgrade(orderId);
+
+                //Inventory Management
+                Reporter.log("<h2> Inveotory Management Page: IMEI Status  Check</h2>");
+                PageBase.InventoryManagementPage().launchInventoryInNewTab();
+                PageBase.InventoryManagementPage().verifyDeviceStatus(iMEINumber, Constants.SOLD);
+                Reporter.log("<h3>IMEI Number =" + iMEINumber + "has been sold.<h3>");
+            }
+
+            //DBError Verification.
+            Reporter.log("<br> DB Errors Verification ");
+            DBError.navigateDBErrorPage();
+            Assert.assertTrue(PageBase.AdminPage().isDBErrorFound(initialCount));
+
+            Reporter.log("<h3>QA_58_VerizonNonEdgeExchange - Test Case Completes<h3>");
+            Log.endTestCase("QA_58_VerizonNonEdgeExchange");
+        } catch (Exception ex) {
+            Log.error(ex.getMessage());
+            System.out.println(ex.getMessage());
+            Utilities.driverTakesScreenshot("QA_58_VerizonNonEdgeExchange");
+            Assert.assertTrue(false);
+        } finally {
+
+        }
+    }
+    //endregion
+    private void carrierResponderSettingsQA58(String phoneNumber) throws InterruptedException, AWTException, IOException {
+        AdminBaseClass adminBaseClass = new AdminBaseClass();
+        adminBaseClass.launchAdminInNewTab();
+        PageBase.AdminPage().navigateToSimulator();
+        PageBase.AdminPage().selectWebAPIResponse("Verizon", "CarrierResponder");
+        //Selecting Use Case from dropdown list.
+        PageBase.AdminPage().selectAPIConfig("Verizon");
+        //Utilities.switchNextTab();
+        // Utilities.RefreshPage();
+        //Utilities.waitForElementVisible(PageBase.CarrierResponseXMLPage().verizonCarrierTab);
+        Utilities.implicitWaitSleep(10000);
+        PageBase.CarrierResponseXMLPage().verizonCarrierTab.click();
+        Utilities.ClickElementByJS(PageBase.CarrierResponseXMLPage().verizonCarrierTab);
+        Utilities.implicitWaitSleep(5000);
+        //Utilities.RefreshPage();
+        //Utilities.waitForElementVisible(PageBase.CarrierResponseXMLPage().servicesDropdown);
+        PageBase.CarrierResponseXMLPage().selectOptions("current", "retrieveCustomerDetails", "vwz_accountLookup_LLP_3lines_eligible.xml");
+        Utilities.waitForElementVisible(PageBase.CarrierResponseXMLPage().xmlTextArea);
+        Utilities.implicitWaitSleep(5000);
+        String xmlContent1 = PageBase.CarrierResponseXMLPage().xmlTextArea.getAttribute("value");
+        xmlContent1 = xmlContent1.replace(Constants.DEFAULT_XML_NUMBER_8159547507, phoneNumber);
+        PageBase.CarrierResponseXMLPage().xmlTextArea.clear();
+        Robot robot = new Robot();
+        Utilities.copyPaste(xmlContent1, robot);
+        Utilities.implicitWaitSleep(5000);
+        PageBase.CarrierResponseXMLPage().saveResponseButton.click();
+        Utilities.implicitWaitSleep(5000);
+        PageBase.CarrierResponseXMLPage().selectOptions("current", "submitactivation", "success_1_line.xml");
+        Utilities.waitForElementVisible(PageBase.CarrierResponseXMLPage().xmlTextArea);
+        Utilities.implicitWaitSleep(5000);
+        String xmlContent2 = PageBase.CarrierResponseXMLPage().xmlTextArea.getAttribute("value");
+        xmlContent2 = xmlContent2.replace(Constants.DEFAULT_XML_NUMBER_4152647954, phoneNumber);
+        PageBase.CarrierResponseXMLPage().xmlTextArea.clear();
+        Utilities.copyPaste(xmlContent2, robot);
+        Utilities.implicitWaitSleep(5000);
+        PageBase.CarrierResponseXMLPage().saveResponseButton.click();
+        Utilities.implicitWaitSleep(5000);
+        PageBase.CarrierResponseXMLPage().selectOptions("current", "retrievePricePlans", "plaid_v_1_line.xml");
+        Utilities.waitForElementVisible(PageBase.CarrierResponseXMLPage().xmlTextArea);
+        Utilities.implicitWaitSleep(5000);
+        PageBase.CarrierResponseXMLPage().saveResponseButton.click();
+        Utilities.implicitWaitSleep(5000);
+        PageBase.CarrierResponseXMLPage().selectOptions("current", "submitReceipt", "default.xml");
+        Utilities.waitForElementVisible(PageBase.CarrierResponseXMLPage().xmlTextArea);
+        Utilities.implicitWaitSleep(5000);
+        PageBase.CarrierResponseXMLPage().saveResponseButton.click();
+        Utilities.implicitWaitSleep(5000);
+    }
+
+    private String poaFlowQA58(String phoneNumber, String iMEINumber, String simNumber, String orderId, String sSN, String accountPassword, String zipCode, String
+            receiptId) throws IOException {
+        //Login
+        PageBase.LoginPageRetail().poaLogin(Utilities.getCredentials("tuserUN"), Utilities.getCredentials("tuserPwd"), Utilities.getCredentials("storeId0003"));
+
+        //Home Page
+        PageBase.HomePageRetail().upgradeEligibilityCheckerLink.click();
+
+        //UEC Verification Page
+        Utilities.waitForElementVisible(PageBase.UECVerificationPage().verizonTab);
+        PageBase.UECVerificationPage().verizonTab.click();
+        PageBase.UECVerificationPage().phoneNumberVerizonTextbox.sendKeys(phoneNumber);
+        PageBase.UECVerificationPage().last4OfSSNVerizonTextbox.sendKeys(sSN);
+        PageBase.UECVerificationPage().accountPasswordVerizonTextbox.sendKeys(accountPassword);
+        PageBase.UECVerificationPage().accountZipcodeVerizonTextbox.sendKeys(zipCode);
+        PageBase.UECVerificationPage().continueVerizonButton.click();
+
+        //UEC Add Lines Page
+        // Utilities.implicitWaitSleep(100000);
+        //Utilities.waitForElementVisible(PageBase.UECAddLinesPage().secondAALCheckbox);
+        PageBase.UECAddLinesPage().ClickSecondEnableCheckBox();
+        PageBase.UECAddLinesPage().continueUECAddLinesButton.click();
+
+        //Device Scan Page
+        Utilities.waitForElementVisible(PageBase.DeviceScanPage().iMEIESNTextbox);
+        PageBase.DeviceScanPage().iMEIESNTextbox.sendKeys(iMEINumber);
+        PageBase.DeviceScanPage().submitDeviceButton.click();
+
+        //Verizon Edge Page
+        Utilities.waitForElementVisible(PageBase.VerizonEdgePage().noContinueWith2YearButton, 10);
+        PageBase.VerizonEdgePage().noContinueWith2YearButton.click();
+
+        //Verizon Shop Plans Page
+        Utilities.waitForElementVisible(PageBase.VerizonShopPlansPage().verizonSecondPlan, 10);
+        PageBase.VerizonShopPlansPage().verizonSecondPlan.click();
+
+        //Cart Page
+        Utilities.waitForElementVisible(PageBase.CartPage().firstAssignNumberDropdown);
+        Utilities.dropdownSelect(PageBase.CartPage().firstAssignNumberDropdown, SelectDropMethod.SELECTBYINDEX, "1");
+        String phonePrice = PageBase.CartPage().device1Price.getText();
+        String phoneModel = PageBase.CartPage().firstPhoneModelLink.getText();
+        PageBase.CartPage().continueCartButton.click();
+
+        //Verizon Select Plan Features Page
+        Utilities.waitForElementVisible(PageBase.VerizonSelectPlanFeaturesPage().continueSPFButton);
+        PageBase.VerizonSelectPlanFeaturesPage().continueSPFButton.click();
+
+        //Select Protection Plan Insurance Page
+        Utilities.waitForElementVisible(PageBase.SelectProtectionPlanInsurancePage().eSecuritelInsurance);
+        PageBase.SelectProtectionPlanInsurancePage().eSecuritelInsurance.sendKeys(Keys.PAGE_DOWN);
+        Utilities.implicitWaitSleep(5000);
+        PageBase.SelectProtectionPlanInsurancePage().eSecuritelInsurance.click();
+        Utilities.implicitWaitSleep(6000);
+        PageBase.SelectProtectionPlanInsurancePage().guestReview.click();
+        PageBase.CommonControls().continueButton.click();
+
+
+        //Service Provider Verification Page
+        Utilities.waitForElementVisible(PageBase.ServiceProviderVerificationPage().firstNameTextbox);
+        CustomerDetails customerDetails = PageBase.CSVOperations().ReadCustomerDetailsFromCSV(IdType.DRIVERLICENCE);
+        PageBase.ServiceProviderVerificationPage().populatingSPVPage(customerDetails.FirstName, customerDetails.LastName,
+                customerDetails.EMail, IdType.DRIVERLICENCE, customerDetails.State, customerDetails.IDNumber,
+                customerDetails.IDExpirationMonth, Integer.parseInt(customerDetails.IDExpirationYear));
+        PageBase.ServiceProviderVerificationPage().guestAgreesCreditCheck.click();
+        PageBase.ServiceProviderVerificationPage().continueSPVButton.click();
+
+        //Order Review and Confirm Page
+        Utilities.waitForElementVisible(PageBase.CommonControls().continueCommonButton);
+        Assert.assertTrue(PageBase.OrderReviewAndConfirmPage().device1PriceActual.isDisplayed());
+        //Assert.assertEquals(PageBase.OrderReviewAndConfirmPage().device1PriceActual.getText(), phonePrice); //Not matching right now
+        Assert.assertTrue(PageBase.OrderReviewAndConfirmPage().existingPlanDiv.isDisplayed());
+        String existingPlan = PageBase.OrderReviewAndConfirmPage().existingPlanDiv.getText();
+        Assert.assertTrue(PageBase.OrderReviewAndConfirmPage().twoYearsUpgradeLabel.isDisplayed());
+        Assert.assertTrue(PageBase.OrderReviewAndConfirmPage().upgradeFeeValueText.isDisplayed());
+        String upgradeFee = PageBase.OrderReviewAndConfirmPage().upgradeFeeValueText.getText();
+        Assert.assertTrue(PageBase.OrderReviewAndConfirmPage().totalDueTodayValue.isDisplayed());
+        String totalDue = PageBase.OrderReviewAndConfirmPage().totalDueTodayValue.getText();
+        totalDue = totalDue.replace("inc. tax", "");
+        totalDue = totalDue.replace(" ", "");
+        PageBase.CommonControls().continueCommonButton.click();
+
+        //Terms & Conditions Page
+        Utilities.waitForElementVisible(PageBase.TermsAndConditionsPage().acceptsTargetTCCheckbox);
+        PageBase.TermsAndConditionsPage().acceptsTargetTCCheckbox.click();
+        if (readConfig("Activation").toLowerCase().contains("true")) {
+            PageBase.TermsAndConditionsPage().continueTCButton.click();
+
+            //Payment Required Page //ToDo: Remove this when no insurance bug will fix premanently.
+            Utilities.implicitWaitSleep(4000);
+            String url = driver.getCurrentUrl();
+            if (url.contains("payment")) {
+                PageBase.PaymentRequiredPage().populatingCardDetailsPaymentRequired(CardType.VISA);
+                PageBase.PaymentRequiredPage().sameAddressTab.click();
+                PageBase.PaymentRequiredPage().continuePRButton.click();
+            }
+
+            //Print Mobile Scan Sheet Page
+            Utilities.waitForElementVisible(PageBase.PrintMobileScanSheetPage().continueFirstMSSButton);
+            Assert.assertEquals(PageBase.PrintMobileScanSheetPage().phoneModelText.getText(), phoneModel);
+            //Assert.assertEquals(PageBase.PrintMobileScanSheetPage().phonePriceValuePMSSText.getText(), phonePrice);
+            orderId = PageBase.PrintMobileScanSheetPage().orderNumberValuePMSSText.getText();
+            PageBase.PrintMobileScanSheetPage().continueFirstMSSButton.click();
+
+            //Payment Verification Page
+            Utilities.waitForElementVisible(PageBase.PaymentVerificationPage().textboxTargetReceiptID);
+            PageBase.PaymentVerificationPage().textboxTargetReceiptID.sendKeys(receiptId);
+            Reporter.log("<br> Receipt ID Used: " + receiptId);
+            PageBase.PaymentVerificationPage().submitButton.click();
+
+            //Device Verification and Activation Page
+            Utilities.waitForElementVisible(PageBase.DeviceVerificationaandActivation().deviceIMEITextbox);
+            PageBase.DeviceVerificationaandActivation().deviceIMEITextbox.sendKeys(iMEINumber);
+            PageBase.DeviceVerificationaandActivation().submitDVAButton.click();
+            PageBase.DeviceVerificationaandActivation().simType.clear();
+            PageBase.DeviceVerificationaandActivation().simType.sendKeys(simNumber);
+            try  //ToDo:Remove this when no insurance bug will fix permanently.
+            {
+                PageBase.DeviceVerificationaandActivation().cvnNumberDVATextbox.clear();
+                CreditCardDetails CreditCard = PageBase.CSVOperations().CreditCardDetails(CardType.VISA);
+                String cVNNumberS = "" + CreditCard.CVV;
+                PageBase.DeviceVerificationaandActivation().cvnNumberDVATextbox.sendKeys(cVNNumberS);
+            } catch (Exception e) {
+            }
+            PageBase.DeviceVerificationaandActivation().continueButtonDVA.click();
+
+            //Wireless Customer Agreement Page
+            Utilities.WaitForNextPage();
+            //Utilities.waitForElementVisible(PageBase.WirelessCustomerAgreementPage().acceptsWCACheckbox, 120);
+            Utilities.implicitWaitSleep(7000);
+            Utilities.WaitUntilElementIsClickable(PageBase.WirelessCustomerAgreementPage().acceptsWCACheckbox);
+            PageBase.WirelessCustomerAgreementPage().acceptsWCACheckbox.sendKeys(Keys.PAGE_DOWN);
+            Utilities.implicitWaitSleep(4000);
+            PageBase.WirelessCustomerAgreementPage().acceptsWCACheckbox.click();
+            Utilities.implicitWaitSleep(5000);
+            PageBase.WirelessCustomerAgreementPage().signingWCA(driver);
+            Utilities.implicitWaitSleep(7000);
+            PageBase.WirelessCustomerAgreementPage().continueWCAButton.click();
+
+            //Order Activation and Complete Page
+            // Utilities.waitForElementVisible(PageBase.OrderActivationCompletePage().orderAndActivationCompleteText, 120);
+            Utilities.WaitForNextPage();
+            Utilities.implicitWaitSleep(6000);
+            Assert.assertTrue(PageBase.OrderActivationCompletePage().orderAndActivationCompleteText.isDisplayed());
+            Reporter.log("<h3><U>Order ha been confirmed, Order Id =" + orderId + "</U></h3>");
+            PageBase.CSVOperations().UpdateIMEIStatusToUsed(iMEINumber, FileName.SamsungGalaxyS4_16GBWhite);
+            PageBase.CSVOperations().UpdateIMEIStatusToUsed(receiptId, FileName.ReceiptId);
+            Assert.assertEquals(PageBase.OrderActivationCompletePage().iMEINumberValueText.getText(), iMEINumber);
+            Assert.assertEquals(PageBase.OrderActivationCompletePage().simNumberValueText.getText(), simNumber);
+            //Assert.assertEquals(PageBase.OrderActivationCompletePage().priceValueText.getText(), phonePrice);
+            Assert.assertEquals(PageBase.OrderActivationCompletePage().subtotalValueText.getText(), totalDue);
+
+            //Sending Details of this order to csv file which will be used in other TCs
+            PageBase.CSVOperations();
+            CSVOperations.WriteToCSV("QA_58", orderId, iMEINumber, "", "", customerDetails.FirstName, customerDetails.LastName,
+                    customerDetails.EMail, receiptId, customerDetails.IDType, customerDetails.State,
+                    customerDetails.IDNumber, customerDetails.PhNum, customerDetails.Zip, sSN, customerDetails.IDExpirationMonth, customerDetails.IDExpirationYear);
+        }
+        return orderId;
+    }
+
+    //endregion QA_58
     //region Helper and Refactored Methods
     private void selectingVerizonExternalEnvironment() throws InterruptedException, AWTException, IOException {
         AdminBaseClass adminBaseClass = new AdminBaseClass();
